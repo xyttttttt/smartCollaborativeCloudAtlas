@@ -14,6 +14,8 @@ import com.xyt.init.business.domain.request.user.UserModifyRequest;
 import com.xyt.init.business.domain.service.UserService;
 import com.xyt.init.file.FileService;
 import com.xyt.init.web.vo.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ import static com.xyt.init.business.domain.exception.UserErrorCode.USER_UPLOAD_P
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("user")
+@Tag(name = "用户控制器")
 public class UserController {
 
     @Autowired
@@ -50,6 +53,7 @@ public class UserController {
 //    private ChainFacadeService chainFacadeService;
 
     @GetMapping("/getUserInfo")
+    @Operation(summary = "获取用户详情")
     public Result<UserInfo> getUserInfo() {
         String userId = (String) StpUtil.getLoginId();
         User user = userService.findById(Long.valueOf(userId));
@@ -61,6 +65,7 @@ public class UserController {
     }
 
     @GetMapping("/queryUserByTel")
+    @Operation(summary = "通过手机号获取用户")
     public Result<BasicUserInfo> queryUserByTel(String telephone) {
         User user = userService.findByTelephone(telephone);
         if (user == null) {
@@ -70,6 +75,7 @@ public class UserController {
     }
 
     @PostMapping("/modifyNickName")
+    @Operation(summary = "修改用户昵称")
     public Result<Boolean> modifyNickName(@Valid @RequestBody UserModifyRequest userModifyParam) {
         String userId = (String) StpUtil.getLoginId();
 
@@ -83,6 +89,7 @@ public class UserController {
     }
 
     @PostMapping("/modifyPassword")
+    @Operation(summary = "修改用户密码")
     public Result<Boolean> modifyPassword(@Valid @RequestBody UserModifyRequest userModifyParam) {
         //查询用户信息
         String userId = (String) StpUtil.getLoginId();
@@ -103,6 +110,7 @@ public class UserController {
     }
 
     @PostMapping("/modifyProfilePhoto")
+    @Operation(summary = "修改用户头像")
     public Result<String> modifyProfilePhoto(@RequestParam("file_data") MultipartFile file) throws Exception {
         String userId = (String) StpUtil.getLoginId();
         String prefix = "https://nfturbo-file.oss-cn-hangzhou.aliyuncs.com/";
@@ -129,6 +137,7 @@ public class UserController {
     }
 
     @PostMapping("/auth")
+    @Operation(summary = "用户实名认证")
     public Result<Boolean> auth(@Valid @RequestBody UserAuthRequest userAuthParam) {
         String userId = (String) StpUtil.getLoginId();
 

@@ -18,6 +18,8 @@ import com.xyt.init.business.domain.response.user.vo.LoginVO;
 import com.xyt.init.business.domain.service.NoticeService;
 import com.xyt.init.business.domain.service.UserService;
 import com.xyt.init.web.vo.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ import static com.xyt.init.business.domain.exception.AuthErrorCode.VERIFICATION_
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("auth")
+@Tag(name = "用户认证控制器")
 public class AuthController {
 
     @Autowired
@@ -58,12 +61,14 @@ public class AuthController {
     private static final Integer DEFAULT_LOGIN_SESSION_TIMEOUT = 60 * 60 * 24 * 7;
 
     @GetMapping("/sendCaptcha")
+    @Operation(summary = "获取验证码")
     public Result<Boolean> sendCaptcha(@IsMobile String telephone) {
         NoticeResponse noticeResponse = noticeService.generateAndSendSmsCaptcha(telephone);
         return Result.success(noticeResponse.getSuccess());
     }
 
     @PostMapping("/register")
+    @Operation(summary = "用户注册")
     public Result<Boolean> register(@Valid @RequestBody RegisterRequest registerRequest) {
 
         //验证码校验
@@ -92,6 +97,7 @@ public class AuthController {
      * @return 结果
      */
     @PostMapping("/login")
+    @Operation(summary = "用户登录")
     public Result<LoginVO> login(@Valid @RequestBody LoginRequest loginRequest) {
 
         UserQueryRequest userQueryRequest = new UserQueryRequest(loginRequest.getTelephone());
@@ -141,6 +147,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "退出登录")
     public Result<Boolean> logout() {
         StpUtil.logout();
         return Result.success(true);

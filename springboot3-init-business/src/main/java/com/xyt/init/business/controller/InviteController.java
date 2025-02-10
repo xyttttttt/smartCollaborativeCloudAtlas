@@ -9,6 +9,8 @@ import com.xyt.init.business.domain.entity.user.convertor.UserConvertor;
 import com.xyt.init.business.domain.service.UserService;
 import com.xyt.init.web.vo.MultiResult;
 import com.xyt.init.web.vo.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +30,14 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("user/invite")
+@Tag(name = "用户邀请控制器")
 public class InviteController {
 
     @Autowired
     private UserService userService;
 
     @GetMapping("/getTopN")
+    @Operation(summary = "获取用户积分排行")
     public MultiResult<InviteRankInfo> getTopN(@Max(100) Integer topN) {
         if (topN == null) {
             topN = 100;
@@ -44,6 +48,7 @@ public class InviteController {
     }
 
     @GetMapping("/getMyRank")
+    @Operation(summary = "获取我的积分")
     public Result<Integer> getMyRank() {
         String userId = (String) StpUtil.getLoginId();
         Integer rank = userService.getInviteRank(userId);
@@ -51,6 +56,7 @@ public class InviteController {
     }
 
     @GetMapping("/getInviteList")
+    @Operation(summary = "获取受邀用户列表")
     public MultiResult<UserInfo> getInviteList(int currentPage) {
         String userId = (String) StpUtil.getLoginId();
 
