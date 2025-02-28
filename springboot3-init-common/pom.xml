@@ -38,6 +38,7 @@
         <module>springboot3-init-mq</module>
         <module>springboot3-init-es</module>
         <module>springboot3-init-seata</module>
+        <module>springboot3-init-ai</module>
     </modules>
 
 

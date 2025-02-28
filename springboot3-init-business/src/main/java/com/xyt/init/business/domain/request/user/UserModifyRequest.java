@@ -33,7 +33,7 @@ public class UserModifyRequest {
     private String newPassword;
 
     /**
-     *
+     * 头像
      */
     private String profilePhotoUrl;
 

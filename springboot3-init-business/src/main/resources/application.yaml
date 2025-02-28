@@ -43,3 +43,17 @@ sa-token:
   token-style: uuid
   # 是否输出操作日志
   is-log: true
+
+
+ai:
+  zhipu:
+    apiKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  lke:
+    secretId: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    secretKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    appKey: xxxxxx
+  ten:
+    apiKey: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+

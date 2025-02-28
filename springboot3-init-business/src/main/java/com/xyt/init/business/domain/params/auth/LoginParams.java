@@ -1,4 +1,4 @@
-package com.xyt.init.business.domain.request.user;
+package com.xyt.init.business.domain.params.auth;
 
 import com.xyt.init.business.domain.constant.LoginType;
 import jakarta.validation.constraints.NotBlank;
@@ -10,7 +10,7 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class LoginRequest extends RegisterRequest {
+public class LoginParams extends RegisterParams {
 
     /**
      * 记住我

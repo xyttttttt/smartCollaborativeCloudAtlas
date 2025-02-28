@@ -37,6 +37,7 @@
             <version>4.4.0</version>
         </dependency>
 
+
         <dependency>
             <groupId>com.xyt</groupId>
             <artifactId>springboot3-init-base</artifactId>
@@ -84,6 +85,12 @@
             <artifactId>springboot3-init-datasource</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.xyt</groupId>
+            <artifactId>springboot3-init-ai</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <dependency>
             <groupId>com.xyt</groupId>
             <artifactId>springboot3-init-lock</artifactId>

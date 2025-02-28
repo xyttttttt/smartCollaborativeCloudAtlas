@@ -9,8 +9,9 @@ import com.xyt.init.api.user.response.data.UserInfo;
 import com.xyt.init.business.domain.entity.user.User;
 import com.xyt.init.business.domain.entity.user.convertor.UserConvertor;
 import com.xyt.init.business.domain.exception.UserException;
-import com.xyt.init.business.domain.request.user.UserAuthRequest;
-import com.xyt.init.business.domain.request.user.UserModifyRequest;
+import com.xyt.init.business.domain.params.user.UserModifyNickNameParams;
+import com.xyt.init.business.domain.params.user.UserModifyPasswordParams;
+import com.xyt.init.business.domain.request.user.*;
 import com.xyt.init.business.domain.service.UserService;
 import com.xyt.init.file.FileService;
 import com.xyt.init.web.vo.Result;
@@ -76,13 +77,13 @@ public class UserController {
 
     @PostMapping("/modifyNickName")
     @Operation(summary = "修改用户昵称")
-    public Result<Boolean> modifyNickName(@Valid @RequestBody UserModifyRequest userModifyParam) {
+    public Result<Boolean> modifyNickName(@Valid @RequestBody UserModifyNickNameParams userModifyNickNameParams) {
         String userId = (String) StpUtil.getLoginId();
 
         //修改信息
         UserModifyRequest userModifyRequest = new UserModifyRequest();
         userModifyRequest.setUserId(Long.valueOf(userId));
-        userModifyRequest.setNickName(userModifyParam.getNickName());
+        userModifyRequest.setNickName(userModifyNickNameParams.getNickName());
 
         Boolean registerResult = userService.modify(userModifyRequest).getSuccess();
         return Result.success(registerResult);
@@ -90,7 +91,7 @@ public class UserController {
 
     @PostMapping("/modifyPassword")
     @Operation(summary = "修改用户密码")
-    public Result<Boolean> modifyPassword(@Valid @RequestBody UserModifyRequest userModifyParam) {
+    public Result<Boolean> modifyPassword(@Valid @RequestBody UserModifyPasswordParams userModifyPasswordParams) {
         //查询用户信息
         String userId = (String) StpUtil.getLoginId();
         User user = userService.findById(Long.valueOf(userId));
@@ -98,13 +99,13 @@ public class UserController {
         if (user == null) {
             throw new UserException(USER_NOT_EXIST);
         }
-        if (!StringUtils.equals(user.getPasswordHash(), DigestUtil.md5Hex(userModifyParam.getOldPassword()))) {
+        if (!StringUtils.equals(user.getPasswordHash(), DigestUtil.md5Hex(userModifyPasswordParams.getOldPassword()))) {
             throw new UserException(USER_PASSWD_CHECK_FAIL);
         }
         //修改信息
         UserModifyRequest userModifyRequest = new UserModifyRequest();
         userModifyRequest.setUserId(Long.valueOf(userId));
-        userModifyRequest.setNewPassword(userModifyParam.getNewPassword());
+        userModifyRequest.setNewPassword(userModifyPasswordParams.getNewPassword());
         Boolean registerResult = userService.modify(userModifyRequest).getSuccess();
         return Result.success(registerResult);
     }

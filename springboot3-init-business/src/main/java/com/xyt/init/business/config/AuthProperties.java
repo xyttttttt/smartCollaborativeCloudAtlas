@@ -1,4 +1,4 @@
-package com.xyt.init.business.domain.service.config;
+package com.xyt.init.business.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

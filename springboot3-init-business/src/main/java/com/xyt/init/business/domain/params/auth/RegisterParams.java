@@ -1,7 +1,6 @@
-package com.xyt.init.business.domain.request.user;
+package com.xyt.init.business.domain.params.auth;
 
 import com.xyt.init.base.validator.IsMobile;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,7 +9,7 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class RegisterRequest {
+public class RegisterParams {
 
     /**
      * 手机号
