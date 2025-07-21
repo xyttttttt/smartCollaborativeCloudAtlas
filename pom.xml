@@ -9,18 +9,18 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.xyt</groupId>
-    <artifactId>springboot3-init</artifactId>
+    <artifactId>smartCollaborativeCloudAtlas-back-end</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>springboot3-init</name>
-    <description>springboot3-init</description>
+    <name>smartCollaborativeCloudAtlas-back-end</name>
+    <description>smartCollaborativeCloudAtlas-back-end</description>
     <properties>
         <java.version>21</java.version>
     </properties>
 
     <modules>
-        <module>springboot3-init-common</module>
-        <module>springboot3-init-business</module>
+        <module>smartCollaborativeCloudAtlas-common</module>
+        <module>smartCollaborativeCloudAtlas-business</module>
     </modules>
     <dependencies>
         <dependency>
