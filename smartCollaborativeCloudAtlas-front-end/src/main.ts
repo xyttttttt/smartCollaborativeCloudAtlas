@@ -1,4 +1,3 @@
-import './assets/main.css'
 import Antd from 'ant-design-vue'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
