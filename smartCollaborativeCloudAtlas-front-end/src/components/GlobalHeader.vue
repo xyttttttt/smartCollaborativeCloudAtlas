@@ -21,7 +21,12 @@
       </a-col>
       <a-col flex="120px">
         <div class="user-login-status">
-          <a-button type="primary" href="/user/login">登录</a-button>
+          <div v-if="loginUserStore.loginUser.id">
+            {{ loginUserStore.loginUser.userName ?? '无名' }}
+          </div>
+          <div v-else>
+            <a-button type="primary" href="/user/login">登录</a-button>
+          </div>
         </div>
       </a-col>
     </a-row>
@@ -32,9 +37,11 @@ import { reactive, ref, watch, VueElement, h } from 'vue'
 import { HomeOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons-vue'
 import type { MenuProps, ItemType } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-
 const openKeys = ref<string[]>(['sub1'])
+import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 
+const loginUserStore = useLoginUserStore()
+loginUserStore.fetchLoginUser()
 const items = ref<MenuProps['items']>([
   {
     key: '/',

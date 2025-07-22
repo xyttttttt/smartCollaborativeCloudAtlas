@@ -37,3 +37,26 @@ npm run build
 ```sh
 npm run lint
 ```
+
+
+### OpenApi3自动生成接口文档
+```
+@nmijs/openapi
+```
+#### 下载安装
+```
+npm i --save-dev @umi js/openapi
+```
+#### 使用配置
+```js
+import { generateService } from '@umijs/openapi'
+generateService({
+  requestLibPath: "import request from '@/request'",
+  schemaPath: 'http://localhost:8123/api/v2/api-docs',
+  serversPath: './src',
+})
+```
+#### 使用命令配置  修改package.json
+```
+  "openapi": "node openapi.config.js",
+```
