@@ -19,11 +19,25 @@
           @click="doMenuClick"
         ></a-menu>
       </a-col>
-      <a-col flex="120px">
+      <a-col flex="140px">
         <div class="user-login-status">
-          <div v-if="loginUserStore.loginUser.id">
-            {{ loginUserStore.loginUser.userName ?? '无名' }}
+          <div v-if="loginUserStore.loginUser.userId">
+            <a-dropdown>
+              <ASpace>
+                <a-avatar :src="loginUserStore.loginUser.avatar" />
+                {{ loginUserStore.loginUser.userName ?? '无名' }}
+              </ASpace>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item @click="doLogout">
+                    <LogoutOutlined />
+                    退出登录
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
           </div>
+
           <div v-else>
             <a-button type="primary" href="/user/login">登录</a-button>
           </div>
@@ -33,16 +47,24 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, watch, VueElement, h } from 'vue'
-import { HomeOutlined, AppstoreOutlined, SettingOutlined } from '@ant-design/icons-vue'
+import { ref, watch, h, computed } from 'vue'
+import {
+  HomeOutlined,
+  AppstoreOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+} from '@ant-design/icons-vue'
 import type { MenuProps, ItemType } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
-const openKeys = ref<string[]>(['sub1'])
+const openKeys = ref<string[]>([' '])
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
+import { message } from 'ant-design-vue'
+import { logout } from '@/api/authController.ts'
+import ACCESS_ENUM from '@/access/asseccEnum.ts'
 
 const loginUserStore = useLoginUserStore()
-loginUserStore.fetchLoginUser()
-const items = ref<MenuProps['items']>([
+// 菜单列表
+const originItems = [
   {
     key: '/',
     icon: () => h(HomeOutlined),
@@ -50,18 +72,37 @@ const items = ref<MenuProps['items']>([
     title: '主页',
   },
   {
-    key: '/home',
+    key: '/admin/userManage',
     icon: () => h(AppstoreOutlined),
-    label: '关于',
-    title: '关于',
+    label: '用户管理',
+    title: '用户管理',
   },
   {
-    key: '/sub1',
-    icon: () => h(SettingOutlined),
-    label: 'Navigation Three - Submenu',
-    title: 'Navigation Three - Submenu',
+    key: 'others',
+    label: h('a', { href: 'https://www.codefather.cn', target: '_blank' }, '编程导航'),
+    title: '编程导航',
   },
-])
+]
+
+// 过滤菜单项
+const filterMenus = (menus = [] as MenuProps['items']) => {
+  return menus?.filter((menu) => {
+    if (menu.key.toString().startsWith('/admin')) {
+      const loginUser = loginUserStore.loginUser
+      console.log(loginUser)
+      if (
+        !loginUser ||
+        (loginUser.userRole !== ACCESS_ENUM.ADMIN && loginUser.userRole !== ACCESS_ENUM.SUPER_ADMIN)
+      ) {
+        return false
+      }
+    }
+    return true
+  })
+}
+
+// 展示在菜单的路由数组
+const items = computed<MenuProps['items']>(() => filterMenus(originItems))
 
 const router = useRouter()
 const doMenuClick: MenuProps['onClick'] = ({ key }) => {
@@ -78,6 +119,21 @@ router.afterEach((to, from, next) => {
 watch(openKeys, (val) => {
   console.log('openKeys', val)
 })
+
+// 用户注销
+const doLogout = async () => {
+  const res = await logout()
+  if (res.data.code === 'SUCCESS') {
+    loginUserStore.setLoginUser({
+      userName: '未登录',
+    })
+    localStorage.removeItem('satoken')
+    message.success('退出登录成功')
+    await router.push('/user/login')
+  } else {
+    message.error('退出登录失败，' + res.data.message)
+  }
+}
 </script>
 
 <style scoped>
