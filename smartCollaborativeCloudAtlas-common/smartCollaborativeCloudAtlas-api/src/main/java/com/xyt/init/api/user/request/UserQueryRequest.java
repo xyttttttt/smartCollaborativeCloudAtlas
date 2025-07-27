@@ -31,10 +31,10 @@ public class UserQueryRequest extends BaseRequest {
         this.userQueryCondition = userPhoneQueryCondition;
     }
 
-    public UserQueryRequest(String telephone, String password) {
+    public UserQueryRequest(String userAccount, String password) {
         UserPhoneAndPasswordQueryCondition userPhoneAndPasswordQueryCondition = new UserPhoneAndPasswordQueryCondition();
-        userPhoneAndPasswordQueryCondition.setTelephone(telephone);
-        userPhoneAndPasswordQueryCondition.setPassword(password);
+        userPhoneAndPasswordQueryCondition.setUserAccount(userAccount.trim());
+        userPhoneAndPasswordQueryCondition.setPassword(password.trim());
         this.userQueryCondition = userPhoneAndPasswordQueryCondition;
     }
 

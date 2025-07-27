@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * @author Hollis
  */
 @Configuration
-@MapperScan(basePackages = "com.xyt.init.*.infrastructure.mapper")
+@MapperScan(basePackages = "com.xyt.*.infrastructure.mapper")
 public class DatasourceConfiguration {
 
     @Bean

@@ -1,5 +1,6 @@
 package com.xyt.init.file;
 
+import com.xyt.init.file.domain.response.UploadPictureResponse;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,8 +17,8 @@ public class MockFileServiceImpl implements FileService {
 
 
     @Override
-    public boolean upload(String path, InputStream fileStream) {
-        return true;
+    public UploadPictureResponse upload(String path, InputStream fileStream) {
+        return null;
     }
 
 }

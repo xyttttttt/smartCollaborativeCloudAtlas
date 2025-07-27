@@ -24,6 +24,11 @@ public enum BizErrorCode implements ErrorCode {
     SEND_NOTICE_DUPLICATED("SEND_NOTICE_DUPLICATED", "不允许重复发送通知"),
 
     /**
+     * 上传文件失败
+     */
+    UPLOAD_FILE_FAILED("UPLOAD_FILE_FAILED", "上传文件失败"),
+
+    /**
      * 通知保存失败
      */
     NOTICE_SAVE_FAILED("NOTICE_SAVE_FAILED", "通知保存失败"),

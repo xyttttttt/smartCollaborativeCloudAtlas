@@ -1,5 +1,8 @@
 package com.xyt.init.file;
 
+import com.xyt.init.file.domain.response.UploadPictureResponse;
+
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -15,6 +18,6 @@ public interface FileService {
      * @param fileStream
      * @return
      */
-    public boolean upload(String path, InputStream fileStream);
+    public UploadPictureResponse upload(String path, InputStream fileStream) throws IOException;
 
 }

@@ -24,41 +24,11 @@ public class UserInfo implements Serializable {
     private Long userId;
 
     /**
-     * 昵称
-     */
-    private String nickName;
-
-    /**
-     * 手机号
-     */
-    private String telephone;
-
-    /**
      * 状态
      *
      * @see UserStateEnum
      */
-    private String state;
-
-    /**
-     * 头像地址
-     */
-    private String profilePhotoUrl;
-
-    /**
-     * 区块链地址
-     */
-    private String blockChainUrl;
-
-    /**
-     * 区块链平台
-     */
-    private String blockChainPlatform;
-
-    /**
-     * 实名认证
-     */
-    private Boolean certification;
+    private int state;
 
     /**
      * 用户角色
@@ -69,4 +39,35 @@ public class UserInfo implements Serializable {
      * 邀请码
      */
     private String inviteCode;
+
+    /**
+     * 账号
+     */
+    private String userAccount;
+
+
+
+    /**
+     * 用户昵称
+     */
+    private String userName;
+
+    /**
+     * 用户头像
+     */
+    private String avatar;
+
+
+
+    /**
+     * 受邀请码
+     */
+    private String inviteFrom;
+
+    /**
+     * 用户简介
+     */
+    private String profile;
+
+
 }

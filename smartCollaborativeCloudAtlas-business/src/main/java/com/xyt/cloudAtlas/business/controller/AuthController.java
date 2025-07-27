@@ -2,14 +2,20 @@ package com.xyt.cloudAtlas.business.controller;
 
 import cn.dev33.satoken.stp.SaLoginModel;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.ObjectUtil;
 import com.xyt.cloudAtlas.business.domain.constant.LoginType;
 import com.xyt.cloudAtlas.business.domain.exception.AuthErrorCode;
 import com.xyt.cloudAtlas.business.domain.exception.AuthException;
+import com.xyt.cloudAtlas.business.domain.exception.UserErrorCode;
+import com.xyt.cloudAtlas.business.domain.exception.UserException;
 import com.xyt.cloudAtlas.business.domain.params.auth.LoginParams;
 import com.xyt.cloudAtlas.business.domain.response.user.vo.LoginVO;
 import com.xyt.cloudAtlas.business.domain.service.NoticeService;
+import com.xyt.cloudAtlas.business.domain.service.UserLoginRecordService;
 import com.xyt.cloudAtlas.business.domain.service.UserService;
 import com.xyt.init.api.notice.response.NoticeResponse;
+import com.xyt.init.api.user.constant.UserStateEnum;
 import com.xyt.init.api.user.request.UserQueryRequest;
 import com.xyt.init.api.user.request.UserRegisterRequest;
 import com.xyt.init.api.user.response.UserOperatorResponse;
@@ -28,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import static com.xyt.cloudAtlas.business.domain.exception.UserErrorCode.*;
 import static com.xyt.init.api.notice.constant.NoticeConstant.CAPTCHA_KEY_PREFIX;
 
 /**
@@ -39,7 +46,7 @@ import static com.xyt.init.api.notice.constant.NoticeConstant.CAPTCHA_KEY_PREFIX
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("auth")
-@Tag(name = "用户认证控制器")
+@Tag(name = "AuthController")
 public class AuthController {
 
     @Autowired
@@ -49,10 +56,10 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
+    private UserLoginRecordService userLoginRecordService;
+
+    @Autowired
     private NoticeService noticeService;
-
-
-    private static final String ROOT_CAPTCHA = "8888";
 
     /**
      * 默认登录超时时间：7天
@@ -69,21 +76,15 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "用户注册")
     public Result<Boolean> register(@Valid @RequestBody RegisterParams registerParams) {
-
-        //验证码校验
-        String cachedCode = redisTemplate.opsForValue().get(CAPTCHA_KEY_PREFIX + registerParams.getTelephone());
-        if (!StringUtils.equalsIgnoreCase(cachedCode, registerParams.getCaptcha())) {
-            throw new AuthException(AuthErrorCode.VERIFICATION_CODE_WRONG);
-        }
-
         //注册
         UserRegisterRequest userRegisterRequest = new UserRegisterRequest();
-        userRegisterRequest.setTelephone(registerParams.getTelephone());
+        userRegisterRequest.setUserAccount(registerParams.getUserAccount());
         userRegisterRequest.setInviteCode(registerParams.getInviteCode());
         userRegisterRequest.setPassword(registerParams.getPassword());
+        userRegisterRequest.setCheckPassword(registerParams.getCheckPassword());
 
         UserOperatorResponse registerResult = userService.register(userRegisterRequest);
-        if(registerResult.getSuccess()){
+        if (registerResult.getSuccess()) {
             return Result.success(true);
         }
         return Result.error(registerResult.getResponseCode(), registerResult.getResponseMessage());
@@ -99,50 +100,24 @@ public class AuthController {
     @Operation(summary = "用户登录")
     public Result<LoginVO> login(@Valid @RequestBody LoginParams loginParams) {
 
-        UserQueryRequest userQueryRequest = new UserQueryRequest(loginParams.getTelephone());
-        if (loginParams.getLoginType() == null || loginParams.getLoginType().equals(LoginType.PASSWORD)){
-            userQueryRequest = new UserQueryRequest(loginParams.getTelephone(), loginParams.getPassword());
-        }
-        // fixme 为了方便，暂时直接跳过
-        else if (!ROOT_CAPTCHA.equals(loginParams.getCaptcha())){
-            String cachedCode = redisTemplate.opsForValue().get(CAPTCHA_KEY_PREFIX + loginParams.getTelephone());
-            if (!StringUtils.equalsIgnoreCase(cachedCode, loginParams.getCaptcha())) {
-                throw new AuthException(AuthErrorCode.VERIFICATION_CODE_WRONG);
-            }
-        }
-        //判断是注册还是登陆
+
+        UserQueryRequest userQueryRequest = new UserQueryRequest(loginParams.getUserAccount(), loginParams.getPassword());
+
         //查询用户信息
         UserQueryResponse<UserInfo> userQueryResponse = userService.queryUser(userQueryRequest);
         UserInfo userInfo = userQueryResponse.getData();
-        if (userInfo == null && loginParams.getLoginType().equals(LoginType.TELEPHONE)) {
-            //查询到的用户为空并且当前登录方式为验证码方式 需要注册
-            UserRegisterRequest userRegisterRequest = new UserRegisterRequest();
-            userRegisterRequest.setTelephone(loginParams.getTelephone());
-            userRegisterRequest.setInviteCode(loginParams.getInviteCode());
-            userRegisterRequest.setPassword(loginParams.getPassword());
-            UserOperatorResponse response = userService.register(userRegisterRequest);
-            if (response.getSuccess()) {
-                userQueryResponse = userService.queryUser(userQueryRequest);
-                userInfo = userQueryResponse.getData();
-                StpUtil.login(userInfo.getUserId(), new SaLoginModel().setIsLastingCookie(loginParams.getRememberMe())
-                        .setTimeout(DEFAULT_LOGIN_SESSION_TIMEOUT));
-                StpUtil.getSession().set(userInfo.getUserId().toString(), userInfo);
-                LoginVO loginVO = new LoginVO(userInfo);
-                return Result.success(loginVO);
-            }
-
-            return Result.error(response.getResponseCode(), response.getResponseMessage());
-        } // todo 密码登录错误直接返回错误信息
-        else if (userInfo == null && loginParams.getLoginType().equals(LoginType.PASSWORD)) {
-            return Result.error("401","用户未注册或密码错误，忘记可取用户中心修改密码");
-        } else {
-            //登录
-            StpUtil.login(userInfo.getUserId(), new SaLoginModel().setIsLastingCookie(loginParams.getRememberMe())
-                    .setTimeout(DEFAULT_LOGIN_SESSION_TIMEOUT));
-            StpUtil.getSession().set(userInfo.getUserId().toString(), userInfo);
-            LoginVO loginVO = new LoginVO(userInfo);
-            return Result.success(loginVO);
-        }
+        //判断用户状态
+        Assert.isTrue(ObjectUtil.isNotNull(userInfo), () -> new UserException(ACCOUNT_PASSWORD_WRONG));
+        Assert.isTrue(userInfo.getState() != UserStateEnum.FROZEN.getValue(), () -> new UserException(USER_FROZEN));
+        Assert.isTrue(userInfo.getState() != UserStateEnum.CANCELLED.getValue(), () -> new UserException(USER_CANCELLED));
+        //插入登录记录
+        userLoginRecordService.insertLoginRecord(userInfo.getUserId());
+        //登录
+        StpUtil.login(userInfo.getUserId(), new SaLoginModel().setIsLastingCookie(loginParams.getRememberMe())
+                .setTimeout(DEFAULT_LOGIN_SESSION_TIMEOUT));
+        StpUtil.getSession().set(userInfo.getUserId().toString(), userInfo);
+        LoginVO loginVO = new LoginVO(userInfo);
+        return Result.success(loginVO);
     }
 
     @PostMapping("/logout")

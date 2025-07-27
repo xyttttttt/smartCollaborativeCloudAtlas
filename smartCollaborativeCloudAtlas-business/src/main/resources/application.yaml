@@ -5,6 +5,9 @@ spring:
     active: dev
   config:
     import: classpath:base.yml,classpath:datasource.yml,classpath:cache.yml
+  servlet:
+    multipart:
+      max-file-size: 10MB
 
 server:
   port: 8080
@@ -44,16 +47,6 @@ sa-token:
   # 是否输出操作日志
   is-log: true
 
-
-ai:
-  zhipu:
-    apiKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  lke:
-    secretId: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    secretKey: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    appKey: xxxxxx
-  ten:
-    apiKey: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 

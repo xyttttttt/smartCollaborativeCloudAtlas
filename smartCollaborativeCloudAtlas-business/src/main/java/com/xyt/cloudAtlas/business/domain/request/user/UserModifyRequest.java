@@ -20,7 +20,7 @@ public class UserModifyRequest {
     /**
      * 昵称
      */
-    private String nickName;
+    private String userName;
 
     /**
      * 旧密码

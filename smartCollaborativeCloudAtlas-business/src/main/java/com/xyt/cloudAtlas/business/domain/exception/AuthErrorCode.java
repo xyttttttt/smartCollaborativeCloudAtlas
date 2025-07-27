@@ -20,6 +20,7 @@ public enum AuthErrorCode implements ErrorCode {
      */
     VERIFICATION_CODE_WRONG("VERIFICATION_CODE_WRONG", "验证码错误"),
 
+
     /**
      * 用户信息查询失败
      */
@@ -29,6 +30,12 @@ public enum AuthErrorCode implements ErrorCode {
      * 用户未登录
      */
     USER_NOT_LOGIN("USER_NOT_LOGIN", "用户未登录"),
+
+
+    /**
+     * 无权限
+     */
+    AUTH_ERROR_CODE("AUTH_ERROR_CODE", "无权限"),
 
     /**
      * 用户不存在

@@ -1,11 +1,8 @@
 package com.xyt.cloudAtlas.business.domain.entity.user;
 
-
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.github.houbb.sensitive.annotation.strategy.SensitiveStrategyPhone;
-import com.xyt.cloudAtlas.business.infrastructure.handler.AesEncryptTypeHandler;
 import com.xyt.init.api.user.constant.UserRole;
 import com.xyt.init.api.user.constant.UserStateEnum;
 import com.xyt.init.datasource.domain.entity.BaseEntity;
@@ -21,117 +18,99 @@ import java.util.Date;
  */
 @Setter
 @Getter
-@TableName("users")
+@TableName("user")
 public class User extends BaseEntity {
+
     /**
-     * 昵称
+     * 账号
      */
-    private String nickName;
+    @TableField(value = "user_account")
+    private String userAccount;
+
 
     /**
      * 密码
      */
+    @TableField(value = "password_hash")
     private String passwordHash;
 
     /**
-     * 状态
+     * 用户昵称
      */
-    private UserStateEnum state;
+    @TableField(value = "user_name")
+    private String userName;
+
+    /**
+     * 用户头像
+     */
+    @TableField(value = "avatar")
+    private String avatar;
 
     /**
      * 邀请码
      */
+    @TableField(value = "invite_code")
     private String inviteCode;
 
     /**
-     * 邀请人用户ID
+     * 受邀请码
      */
-    private String inviterId;
+    @TableField(value = "invite_from")
+    private String inviteFrom;
 
     /**
-     * 手机号
+     * 用户简介
      */
-    @SensitiveStrategyPhone
-    private String telephone;
+    @TableField(value = "profile")
+    private String profile;
 
     /**
-     * 最后登录时间
+     * 状态
      */
-    private Date lastLoginTime;
+    @TableField(value = "status")
+    private int status;
 
     /**
-     * 头像地址
+     * 用户角色：user/admin
      */
-    private String profilePhotoUrl;
-
-    /**
-     * 区块链地址
-     */
-    private String blockChainUrl;
-
-    /**
-     * 区块链平台
-     */
-    private String blockChainPlatform;
-
-    /**
-     * 实名认证
-     */
-    private Boolean certification;
-
-    /**
-     * 真实姓名
-     */
-    @TableField(typeHandler = AesEncryptTypeHandler.class)
-    private String realName;
-
-    /**
-     * 身份证hash
-     */
-    @TableField(typeHandler = AesEncryptTypeHandler.class)
-    private String idCardNo;
-
-    /**
-     * 用户角色
-     */
+    @TableField(value = "user_role")
     private UserRole userRole;
 
-    public User register(String telephone, String nickName, String password,String inviteCode,String inviterId) {
-        this.setTelephone(telephone);
-        this.setNickName(nickName);
+    /**
+     * 编辑时间
+     */
+    @TableField(value = "edit_time")
+    private Date editTime;
+
+
+    /**
+     * 上次登录时间
+     */
+    @TableField(value = "last_login_time")
+    private Date lastLoginTime;
+
+    public User register(String account, String userName, String password,String inviteCode,String inviterFrom) {
+        this.setUserAccount(account);
+        this.setUserName(userName);
         this.setPasswordHash(DigestUtil.md5Hex(password));
-        this.setState(UserStateEnum.INIT);
+        this.setStatus(UserStateEnum.INIT.getValue());
         this.setUserRole(UserRole.CUSTOMER);
         this.setInviteCode(inviteCode);
-        this.setInviterId(inviterId);
+        this.setInviteFrom(inviterFrom);
         return this;
     }
 
-    public User registerAdmin(String telephone, String nickName, String password) {
-        this.setTelephone(telephone);
-        this.setNickName(nickName);
+    public User registerAdmin(String account, String nickName, String password) {
+        this.setUserAccount(account);
+        this.setUserName(nickName);
         this.setPasswordHash(DigestUtil.md5Hex(password));
-        this.setState(UserStateEnum.ACTIVE);
+        this.setStatus(UserStateEnum.INIT.getValue());
         this.setUserRole(UserRole.ADMIN);
         return this;
     }
 
-    public User auth(String realName, String idCard) {
-        this.setRealName(realName);
-        this.setIdCardNo(idCard);
-        this.setCertification(true);
-        this.setState(UserStateEnum.AUTH);
-        return this;
-    }
-
-    public User active(String blockChainUrl, String blockChainPlatform) {
-        this.setBlockChainUrl(blockChainUrl);
-        this.setBlockChainPlatform(blockChainPlatform);
-        this.setState(UserStateEnum.ACTIVE);
-        return this;
-    }
 
     public boolean canModifyInfo() {
-        return state == UserStateEnum.INIT || state == UserStateEnum.AUTH || state == UserStateEnum.ACTIVE;
+        return status == UserStateEnum.INIT.getValue();
     }
 }

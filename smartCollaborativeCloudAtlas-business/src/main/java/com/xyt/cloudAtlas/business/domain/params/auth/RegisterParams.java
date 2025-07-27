@@ -1,6 +1,8 @@
 package com.xyt.cloudAtlas.business.domain.params.auth;
 
 import com.xyt.init.base.validator.IsMobile;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,14 +16,9 @@ public class RegisterParams {
     /**
      * 手机号
      */
-    @IsMobile
-    private String telephone;
+    @Size(min = 6, max = 14)
+    private String userAccount;
 
-    /**
-     * 验证码
-     */
-//    @NotBlank(message = "验证码不能为空")
-    private String captcha;
 
     /**
      * 邀请码
@@ -31,5 +28,12 @@ public class RegisterParams {
     /**
      * 密码
      */
+    @NotBlank
     private String password;
+
+    /**
+     * 密码
+     */
+    @NotBlank
+    private String checkPassword;
 }

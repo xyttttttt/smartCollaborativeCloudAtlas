@@ -44,6 +44,8 @@
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
+
+
         <dependency>
             <groupId>com.xyt</groupId>
             <artifactId>smartCollaborativeCloudAtlas-api</artifactId>
@@ -84,11 +86,6 @@
             <groupId>com.xyt</groupId>
             <artifactId>smartCollaborativeCloudAtlas-datasource</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xyt</groupId>
-            <artifactId>smartCollaborativeCloudAtlas-ai</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>

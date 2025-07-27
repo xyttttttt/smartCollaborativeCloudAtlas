@@ -30,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("user/invite")
-@Tag(name = "用户邀请控制器")
+@Tag(name = "InviteController")
 public class InviteController {
 
     @Autowired

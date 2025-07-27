@@ -21,15 +21,15 @@ public class StpInterfaceImpl implements StpInterface {
     public List<String> getPermissionList(Object loginId, String loginType) {
         UserInfo userInfo = (UserInfo) StpUtil.getSessionByLoginId(loginId).get((String) loginId);
 
-        if (userInfo.getUserRole() == UserRole.ADMIN || userInfo.getState().equals(UserStateEnum.ACTIVE.name()) || userInfo.getState().equals(UserStateEnum.AUTH.name()) ) {
+        if (userInfo.getUserRole() == UserRole.ADMIN ) {
             return List.of(UserPermission.BASIC.name(), UserPermission.AUTH.name());
         }
 
-        if (userInfo.getState().equals(UserStateEnum.INIT.name())) {
+        if (userInfo.getState() == UserStateEnum.INIT.getValue()) {
             return List.of(UserPermission.BASIC.name());
         }
 
-        if (userInfo.getState().equals(UserStateEnum.FROZEN.name())) {
+        if (userInfo.getState()== UserStateEnum.FROZEN.getValue()) {
             return List.of(UserPermission.FROZEN.name());
         }
 
@@ -44,4 +44,6 @@ public class StpInterfaceImpl implements StpInterface {
         }
         return List.of(UserRole.CUSTOMER.name());
     }
+
+
 }

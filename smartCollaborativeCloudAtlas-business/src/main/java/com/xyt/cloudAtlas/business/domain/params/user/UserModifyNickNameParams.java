@@ -15,6 +15,6 @@ public class UserModifyNickNameParams {
     /**
      * 昵称
      */
-    private String nickName;
+    private String userName;
 
 }

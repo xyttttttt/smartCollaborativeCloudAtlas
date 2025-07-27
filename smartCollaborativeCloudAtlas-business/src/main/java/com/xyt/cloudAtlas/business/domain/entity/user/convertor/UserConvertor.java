@@ -1,5 +1,6 @@
 package com.xyt.cloudAtlas.business.domain.entity.user.convertor;
 
+import com.xyt.cloudAtlas.business.domain.response.user.vo.UserVO;
 import com.xyt.init.api.user.response.data.BasicUserInfo;
 import com.xyt.init.api.user.response.data.UserInfo;
 import com.xyt.cloudAtlas.business.domain.entity.user.User;
@@ -25,7 +26,6 @@ public interface UserConvertor {
      * @return
      */
     @Mapping(target = "userId", source = "request.id")
-    @Mapping(target = "createTime", source = "request.gmtCreate")
     public UserInfo mapToVo(User request);
 
     /**
@@ -53,4 +53,14 @@ public interface UserConvertor {
      */
     @Mapping(target = "userId", source = "request.id")
     public List<UserInfo> mapToVo(List<User> request);
+
+
+    /**
+     * 转换为VO
+     *
+     * @param request
+     * @return
+     */
+    @Mapping(target = "id", source = "request.id")
+    public List<UserVO> mapToUserVo(List<User> request);
 }

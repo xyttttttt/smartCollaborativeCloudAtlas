@@ -17,7 +17,7 @@ public class UserPhoneAndPasswordQueryCondition implements UserQueryCondition {
     /**
      * 用户手机号
      */
-    private String telephone;
+    private String userAccount;
 
     /**
      * 密码

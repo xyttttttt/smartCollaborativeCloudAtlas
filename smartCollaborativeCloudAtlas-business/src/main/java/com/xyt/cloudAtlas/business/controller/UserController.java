@@ -1,6 +1,8 @@
 package com.xyt.cloudAtlas.business.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.xyt.cloudAtlas.business.domain.request.user.UserAuthRequest;
 import com.xyt.cloudAtlas.business.domain.request.user.UserModifyRequest;
@@ -41,7 +43,7 @@ import static com.xyt.cloudAtlas.business.domain.exception.UserErrorCode.USER_UP
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("user")
-@Tag(name = "用户控制器")
+@Tag(name = "UserController")
 public class UserController {
 
     @Autowired
@@ -49,9 +51,6 @@ public class UserController {
 
     @Autowired
     private FileService fileService;
-
-//    @Autowired
-//    private ChainFacadeService chainFacadeService;
 
     @GetMapping("/getUserInfo")
     @Operation(summary = "获取用户详情")
@@ -65,10 +64,10 @@ public class UserController {
         return Result.success(UserConvertor.INSTANCE.mapToVo(user));
     }
 
-    @GetMapping("/queryUserByTel")
-    @Operation(summary = "通过手机号获取用户")
-    public Result<BasicUserInfo> queryUserByTel(String telephone) {
-        User user = userService.findByTelephone(telephone);
+    @GetMapping("/queryUserByName")
+    @Operation(summary = "通过昵称获取用户")
+    public Result<BasicUserInfo> queryUserByName(String userName) {
+        User user = userService.findByUserName(userName);
         if (user == null) {
             throw new UserException(USER_NOT_EXIST);
         }
@@ -83,7 +82,7 @@ public class UserController {
         //修改信息
         UserModifyRequest userModifyRequest = new UserModifyRequest();
         userModifyRequest.setUserId(Long.valueOf(userId));
-        userModifyRequest.setNickName(userModifyNickNameParams.getNickName());
+        userModifyRequest.setUserName(userModifyNickNameParams.getUserName());
 
         Boolean registerResult = userService.modify(userModifyRequest).getSuccess();
         return Result.success(registerResult);
@@ -123,7 +122,7 @@ public class UserController {
         InputStream fileStream = file.getInputStream();
         String path = "profile/" + userId + "/" + filename;
         var res = fileService.upload(path, fileStream);
-        if (!res) {
+        if (StrUtil.isNotBlank(res.getUrl())) {
             throw new UserException(USER_UPLOAD_PICTURE_FAIL);
         }
         //修改信息
@@ -137,24 +136,4 @@ public class UserController {
         return Result.success(prefix + path);
     }
 
-    @PostMapping("/auth")
-    @Operation(summary = "用户实名认证")
-    public Result<Boolean> auth(@Valid @RequestBody UserAuthRequest userAuthParam) {
-        String userId = (String) StpUtil.getLoginId();
-
-        //实名认证
-        UserAuthRequest userAuthRequest = new UserAuthRequest();
-        userAuthRequest.setUserId(Long.valueOf(userId));
-        userAuthRequest.setRealName(userAuthParam.getRealName());
-        userAuthRequest.setIdCard(userAuthParam.getIdCard());
-        UserOperatorResponse authResult = userService.auth(userAuthRequest);
-
-        return Result.error(authResult.getResponseCode(), authResult.getResponseMessage());
-    }
-
-    private void refreshUserInSession(String userId) {
-        User user = userService.getById(userId);
-        UserInfo userInfo = UserConvertor.INSTANCE.mapToVo(user);
-        StpUtil.getSession().set(userInfo.getUserId().toString(), userInfo);
-    }
 }

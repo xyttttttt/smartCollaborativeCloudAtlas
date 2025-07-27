@@ -2,6 +2,7 @@ package com.xyt.cloudAtlas.business.domain.params.auth;
 
 import com.xyt.cloudAtlas.business.domain.constant.LoginType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,17 +11,23 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class LoginParams extends RegisterParams {
+public class LoginParams{
 
     /**
      * 记住我
      */
     private Boolean rememberMe;
 
+    /**
+     * 密码
+     */
+    @NotBlank
+    private String password;
 
     /**
-     * 登录类型
+     * 手机号
      */
-    @NotBlank(message = "登录类型不能为空")
-    private LoginType loginType;
+    @Size(min = 6, max = 14)
+    private String userAccount;
+
 }

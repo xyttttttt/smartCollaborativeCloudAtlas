@@ -1,6 +1,7 @@
 package com.xyt.cloudAtlas.business.domain.service.impl;
 
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.crypto.digest.DigestUtil;
@@ -11,12 +12,13 @@ import com.alicp.jetcache.anno.CacheRefresh;
 import com.alicp.jetcache.anno.CacheType;
 import com.alicp.jetcache.anno.Cached;
 import com.alicp.jetcache.template.QuickConfig;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xyt.cloudAtlas.business.domain.params.auth.UserQueryParams;
 import com.xyt.init.api.user.constant.UserOperateTypeEnum;
 import com.xyt.init.api.user.constant.UserStateEnum;
-import com.xyt.init.api.user.request.UserActiveRequest;
 import com.xyt.init.api.user.request.UserQueryRequest;
 import com.xyt.init.api.user.request.UserRegisterRequest;
 import com.xyt.init.api.user.request.condition.UserIdQueryCondition;
@@ -33,13 +35,13 @@ import com.xyt.cloudAtlas.business.domain.entity.user.User;
 import com.xyt.cloudAtlas.business.domain.entity.user.convertor.UserConvertor;
 import com.xyt.cloudAtlas.business.domain.exception.UserErrorCode;
 import com.xyt.cloudAtlas.business.domain.exception.UserException;
-import com.xyt.cloudAtlas.business.domain.request.user.UserAuthRequest;
 import com.xyt.cloudAtlas.business.domain.request.user.UserModifyRequest;
 import com.xyt.cloudAtlas.business.domain.service.AuthService;
 import com.xyt.cloudAtlas.business.domain.service.UserOperateStreamService;
 import com.xyt.cloudAtlas.business.domain.service.UserService;
 import com.xyt.cloudAtlas.business.infrastructure.mapper.UserMapper;
 import com.xyt.init.lock.DistributeLock;
+import com.xyt.init.web.vo.Result;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RBloomFilter;
@@ -59,6 +61,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.xyt.cloudAtlas.business.domain.exception.AuthErrorCode.AUTH_ERROR_CODE;
 import static com.xyt.cloudAtlas.business.domain.exception.UserErrorCode.*;
 
 
@@ -70,7 +73,8 @@ import static com.xyt.cloudAtlas.business.domain.exception.UserErrorCode.*;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements InitializingBean, UserService {
 
-    private static final String DEFAULT_NICK_NAME_PREFIX = "藏家_";
+    private static final String DEFAULT_NICK_NAME_PREFIX = "用户_";
+    private static final String DEFAULT_ADMIN_NICK_NAME_PREFIX = "管理_";
 
     @Autowired
     private UserMapper userMapper;
@@ -108,20 +112,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         idUserCache = cacheManager.getOrCreateCache(idQc);
     }
 
-    @DistributeLock(keyExpression = "#telephone", scene = "USER_REGISTER")
+    @DistributeLock(keyExpression = "#userAccount", scene = "USER_REGISTER")
     @Transactional
     @Override
     public UserOperatorResponse register(UserRegisterRequest userRegisterRequest) {
         String inviteCode = userRegisterRequest.getInviteCode();
-        String telephone = userRegisterRequest.getTelephone();
+        String userAccount = userRegisterRequest.getUserAccount();
         String password = userRegisterRequest.getPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        Assert.isTrue(password.equals(checkPassword), UserErrorCode.USER_PASSWORD_NOT_EQUALS.getCode());
 
         String defaultNickName;
         String randomString;
         do {
             randomString = RandomUtil.randomString(6).toUpperCase();
             //前缀 + 6位随机数 + 手机号后四位
-            defaultNickName = DEFAULT_NICK_NAME_PREFIX + randomString + telephone.substring(7, 11);
+            defaultNickName = DEFAULT_NICK_NAME_PREFIX + randomString + userAccount.substring(userAccount.length()-4);
         } while (nickNameExist(defaultNickName) || inviteCodeExist(randomString));
 
         String inviterId = null;
@@ -129,13 +135,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
             User inviter = userMapper.findByInviteCode(inviteCode);
             if (inviter != null) {
                 inviterId = inviter.getId().toString();
+                //todo 插入用户邀请
             }
         }
 
-        User user = register(telephone, defaultNickName, telephone, randomString, inviterId);
+        User user = register(userAccount, defaultNickName, password, randomString, inviterId);
         Assert.notNull(user, UserErrorCode.USER_OPERATE_FAILED.getCode());
 
-        addNickName(defaultNickName);
+        addUserName(defaultNickName);
         addInviteCode(randomString);
         updateInviteRank(inviterId);
         updateUserCache(user.getId().toString(), user);
@@ -179,97 +186,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
     /**
      * 注册
      *
-     * @param telephone
+     * @param account
      * @param nickName
      * @param password
      * @return
      */
-    private User register(String telephone, String nickName, String password, String inviteCode, String inviterId) {
-        if (userMapper.findByTelephone(telephone) != null) {
-            throw new UserException(DUPLICATE_TELEPHONE_NUMBER);
+    private User register(String account, String nickName, String password, String inviteCode, String inviterId) {
+        if (userMapper.findByAccount(account) != null) {
+            throw new UserException(DUPLICATE_ACCOUNT);
         }
 
         User user = new User();
-        user.register(telephone, nickName, password, inviteCode, inviterId);
+        user. register(account, nickName, password, inviteCode, inviterId);
         return save(user) ? user : null;
     }
 
-    private User registerAdmin(String telephone, String nickName, String password) {
-        if (userMapper.findByTelephone(telephone) != null) {
-            throw new UserException(DUPLICATE_TELEPHONE_NUMBER);
+    private User registerAdmin(String account, String nickName, String password) {
+        if (userMapper.findByAccount(account) != null) {
+            throw new UserException(DUPLICATE_ACCOUNT);
         }
 
         User user = new User();
-        user.registerAdmin(telephone, nickName, password);
+        user.registerAdmin(account, nickName, password);
         return save(user) ? user : null;
     }
 
-    /**
-     * 实名认证
-     *
-     * @param userAuthRequest
-     * @return
-     */
-    @CacheInvalidate(name = ":user:cache:id:", key = "#userAuthRequest.userId")
-    @Transactional
-    @Override
-    public UserOperatorResponse auth(UserAuthRequest userAuthRequest) {
-        UserOperatorResponse userOperatorResponse = new UserOperatorResponse();
-        User user = userMapper.findById(userAuthRequest.getUserId());
-        Assert.notNull(user, () -> new UserException(USER_NOT_EXIST));
 
-        if (user.getState() == UserStateEnum.AUTH || user.getState() == UserStateEnum.ACTIVE) {
-            userOperatorResponse.setSuccess(true);
-            userOperatorResponse.setUser(UserConvertor.INSTANCE.mapToVo(user));
-            return userOperatorResponse;
-        }
-
-        Assert.isTrue(user.getState() == UserStateEnum.INIT, () -> new UserException(USER_STATUS_IS_NOT_INIT));
-        Assert.isTrue(authService.checkAuth(userAuthRequest.getRealName(), userAuthRequest.getIdCard()), () -> new UserException(USER_AUTH_FAIL));
-        user.auth(userAuthRequest.getRealName(), userAuthRequest.getIdCard());
-        boolean result = updateById(user);
-        if (result) {
-            //加入流水
-            long streamResult = userOperateStreamService.insertStream(user, UserOperateTypeEnum.AUTH);
-            Assert.notNull(streamResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
-            userOperatorResponse.setSuccess(true);
-            userOperatorResponse.setUser(UserConvertor.INSTANCE.mapToVo(user));
-        } else {
-            userOperatorResponse.setSuccess(false);
-            userOperatorResponse.setResponseCode(UserErrorCode.USER_OPERATE_FAILED.getCode());
-            userOperatorResponse.setResponseCode(UserErrorCode.USER_OPERATE_FAILED.getMessage());
-        }
-        return userOperatorResponse;
-    }
-
-    /**
-     * 用户激活
-     *
-     * @param userActiveRequest
-     * @return
-     */
-    @CacheInvalidate(name = ":user:cache:id:", key = "#userActiveRequest.userId")
-    @Transactional
-    @Override
-    public UserOperatorResponse active(UserActiveRequest userActiveRequest) {
-        UserOperatorResponse userOperatorResponse = new UserOperatorResponse();
-        User user = userMapper.findById(userActiveRequest.getUserId());
-        Assert.notNull(user, () -> new UserException(USER_NOT_EXIST));
-        Assert.isTrue(user.getState() == UserStateEnum.AUTH, () -> new UserException(USER_STATUS_IS_NOT_AUTH));
-        user.active(userActiveRequest.getBlockChainUrl(), userActiveRequest.getBlockChainPlatform());
-        boolean result = updateById(user);
-        if (result) {
-            //加入流水
-            long streamResult = userOperateStreamService.insertStream(user, UserOperateTypeEnum.ACTIVE);
-            Assert.notNull(streamResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
-            userOperatorResponse.setSuccess(true);
-        } else {
-            userOperatorResponse.setSuccess(false);
-            userOperatorResponse.setResponseCode(UserErrorCode.USER_OPERATE_FAILED.getCode());
-            userOperatorResponse.setResponseCode(UserErrorCode.USER_OPERATE_FAILED.getMessage());
-        }
-        return userOperatorResponse;
-    }
 
     /**
      * 冻结
@@ -283,16 +225,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         UserOperatorResponse userOperatorResponse = new UserOperatorResponse();
         User user = userMapper.findById(userId);
         Assert.notNull(user, () -> new UserException(USER_NOT_EXIST));
-        Assert.isTrue(user.getState() == UserStateEnum.ACTIVE, () -> new UserException(USER_STATUS_IS_NOT_ACTIVE));
-
-        //第一次删除缓存
-        idUserCache.remove(user.getId().toString());
-
-        if (user.getState() == UserStateEnum.FROZEN) {
+        if (user.getStatus() == UserStateEnum.FROZEN.getValue()) {
             userOperatorResponse.setSuccess(true);
             return userOperatorResponse;
         }
-        user.setState(UserStateEnum.FROZEN);
+        //第一次删除缓存
+        idUserCache.remove(user.getId().toString());
+
+        if (user.getStatus() == UserStateEnum.FROZEN.getValue()) {
+            userOperatorResponse.setSuccess(true);
+            return userOperatorResponse;
+        }
+        user.setStatus(UserStateEnum.FROZEN.getValue());
         boolean updateResult = updateById(user);
         Assert.isTrue(updateResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
         //加入流水
@@ -303,6 +247,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         userCacheDelayDeleteService.delayedCacheDelete(idUserCache, user);
 
         userOperatorResponse.setSuccess(true);
+        refreshUserInSession(user.getId().toString());
         return userOperatorResponse;
     }
 
@@ -322,11 +267,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         //第一次删除缓存
         idUserCache.remove(user.getId().toString());
 
-        if (user.getState() == UserStateEnum.ACTIVE) {
+        if (user.getStatus() == UserStateEnum.INIT.getValue()) {
             userOperatorResponse.setSuccess(true);
             return userOperatorResponse;
         }
-        user.setState(UserStateEnum.ACTIVE);
+        user.setStatus(UserStateEnum.INIT.getValue());
         //更新数据库
         boolean updateResult = updateById(user);
         Assert.isTrue(updateResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
@@ -338,6 +283,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         userCacheDelayDeleteService.delayedCacheDelete(idUserCache, user);
 
         userOperatorResponse.setSuccess(true);
+
+        refreshUserInSession(user.getId().toString());
         return userOperatorResponse;
     }
 
@@ -353,13 +300,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
     @Override
     public PageResponse<User> pageQueryByState(String keyWord, String state, int currentPage, int pageSize) {
         Page<User> page = new Page<>(currentPage, pageSize);
-        QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.eq("state", state);
 
-        if (keyWord != null) {
-            wrapper.like("telephone", keyWord);
-        }
-        wrapper.orderBy(true, true, "gmt_create");
+        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class)
+                .eq(User::getStatus, state)
+                .like(StringUtils.isNotBlank(keyWord),User::getUserAccount, keyWord)
+                .orderBy(true, true, User::getCreateTime);
 
         Page<User> userPage = this.page(page, wrapper);
 
@@ -369,13 +314,68 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
     /**
      * 通过手机号和密码查询用户信息
      *
-     * @param telephone
+     * @param account
      * @param password
      * @return
      */
     @Override
-    public User findByTelephoneAndPass(String telephone, String password) {
-        return userMapper.findByTelephoneAndPass(telephone, DigestUtil.md5Hex(password));
+    public User findByAccountAndPass(String account, String password) {
+        return userMapper.findByAccountAndPass(account, DigestUtil.md5Hex(password));
+    }
+
+    /**
+     * 通过手机号查询用户信息
+     *
+     * @param userName
+     * @return
+     */
+    @Override
+    public User findByUserName(String userName) {
+        return userMapper.findByUserName(userName);
+    }
+
+    @Override
+    public UserOperatorResponse adminRegister(String userAccount) {
+
+
+        String defaultNickName;
+        String randomString;
+        do {
+            randomString = RandomUtil.randomString(6).toUpperCase();
+            //前缀 + 6位随机数 + 手机号后四位
+            defaultNickName = DEFAULT_ADMIN_NICK_NAME_PREFIX + randomString + userAccount.substring(7, 11);
+        } while (nickNameExist(defaultNickName) || inviteCodeExist(randomString));
+
+        String inviterId = null;
+
+        String password = "admin2025!";
+        User user = register(userAccount, defaultNickName, password, randomString, inviterId);
+        Assert.notNull(user, UserErrorCode.USER_OPERATE_FAILED.getCode());
+
+        addUserName(defaultNickName);
+        addInviteCode(randomString);
+        updateInviteRank(inviterId);
+        updateUserCache(user.getId().toString(), user);
+        //加入流水
+        long streamResult = userOperateStreamService.insertStream(user, UserOperateTypeEnum.REGISTER);
+        Assert.notNull(streamResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
+
+        UserOperatorResponse userOperatorResponse = new UserOperatorResponse();
+        userOperatorResponse.setSuccess(true);
+
+        return userOperatorResponse;
+    }
+
+    @Override
+    public PageResponse<User> userVoList(UserQueryParams registerParams) {
+        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class)
+                .eq(registerParams.getId() != null, User::getId, registerParams.getId())
+                .eq(registerParams.getUserAccount() != null, User::getUserAccount, registerParams.getUserAccount())
+                .like(registerParams.getUserName() != null, User::getUserName, registerParams.getUserName())
+                .orderBy(true, true, User::getCreateTime);
+        Page<User> page = new Page<>(registerParams.getCurrentPage(), registerParams.getPageSize());
+        Page<User> userPage = this.page(page, wrapper);
+        return PageResponse.of(userPage.getRecords(), (int) userPage.getTotal(), registerParams.getPageSize(), registerParams.getCurrentPage());
     }
 
     /**
@@ -386,7 +386,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
      */
     @Override
     public User findByTelephone(String telephone) {
-        return userMapper.findByTelephone(telephone);
+        return userMapper.findByAccount(telephone);
     }
 
     /**
@@ -417,8 +417,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         Assert.notNull(user, () -> new UserException(USER_NOT_EXIST));
         Assert.isTrue(user.canModifyInfo(), () -> new UserException(USER_STATUS_CANT_OPERATE));
 
-        if (StringUtils.isNotBlank(userModifyRequest.getNickName()) && nickNameExist(userModifyRequest.getNickName())) {
-            throw new UserException(NICK_NAME_EXIST);
+        if (StringUtils.isNotBlank(userModifyRequest.getUserName()) && nickNameExist(userModifyRequest.getUserName())) {
+            throw new UserException(USER_NAME_EXIST);
         }
         BeanUtils.copyProperties(userModifyRequest, user);
 
@@ -429,9 +429,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
             //加入流水
             long streamResult = userOperateStreamService.insertStream(user, UserOperateTypeEnum.MODIFY);
             Assert.notNull(streamResult, () -> new BizException(RepoErrorCode.UPDATE_FAILED));
-            addNickName(userModifyRequest.getNickName());
+            addUserName(userModifyRequest.getUserName());
             userOperatorResponse.setSuccess(true);
-
             return userOperatorResponse;
         }
         userOperatorResponse.setSuccess(false);
@@ -451,13 +450,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
     }
 
     @Override
-    public PageResponse<User> getUsersByInviterId(String inviterId, int currentPage, int pageSize) {
+    public PageResponse<User> getUsersByInviterId(String inviterCode, int currentPage, int pageSize) {
         Page<User> page = new Page<>(currentPage, pageSize);
-        QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.select("nick_name","gmt_create");
-        wrapper.eq("inviter_id", inviterId);
 
-        wrapper.orderBy(true, false, "gmt_create");
+        LambdaQueryWrapper<User> wrapper = Wrappers.lambdaQuery(User.class)
+                .eq(User::getInviteCode, inviterCode)
+                .select(User::getUserName, User::getCreateTime)
+                .orderBy(true, false, User::getCreateTime);
 
         Page<User> userPage = this.page(page, wrapper);
         return PageResponse.of(userPage.getRecords(), (int) userPage.getTotal(), pageSize, currentPage);
@@ -476,7 +475,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
                 if (StringUtils.isNotBlank(userId)) {
                     User user = findById(Long.valueOf(userId));
                     if (user != null) {
-                        inviteRankInfo.setNickName(user.getNickName());
+                        inviteRankInfo.setNickName(user.getUserName());
                         inviteRankInfo.setInviteCode(user.getInviteCode());
                         inviteRankInfo.setInviteScore(rankInfo.getScore().intValue());
                         inviteRankInfos.add(inviteRankInfo);
@@ -519,7 +518,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
             case UserPhoneQueryCondition userPhoneQueryCondition:
                 yield this.findByTelephone(userPhoneQueryCondition.getTelephone());
             case UserPhoneAndPasswordQueryCondition userPhoneAndPasswordQueryCondition:
-                yield this.findByTelephoneAndPass(userPhoneAndPasswordQueryCondition.getTelephone(), userPhoneAndPasswordQueryCondition.getPassword());
+                yield this.findByAccountAndPass(userPhoneAndPasswordQueryCondition.getUserAccount(),userPhoneAndPasswordQueryCondition.getPassword());
             default:
                 throw new UnsupportedOperationException(userQueryRequest.getUserQueryCondition() + "'' is not supported");
         };
@@ -531,7 +530,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         return response;
     }
 
-    private boolean addNickName(String nickName) {
+
+    public void checkSelfOrAdmin(Long targetUserId) {
+        // 获取当前登录用户ID
+        long loginUserId = StpUtil.getLoginIdAsLong();
+
+        // 如果是本人或者管理员，则通过
+        boolean isSelfOrAdmin = loginUserId == targetUserId || StpUtil.hasRole("admin");
+        if (!isSelfOrAdmin) {
+            throw new BizException(AUTH_ERROR_CODE);
+        }
+    }
+
+    private boolean addUserName(String nickName) {
         return this.nickNameBloomFilter != null && this.nickNameBloomFilter.add(nickName);
     }
 
@@ -560,9 +571,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements In
         idUserCache.put(userId, user);
     }
 
+    private void refreshUserInSession(String userId) {
+        User user = this.getById(userId);
+        UserInfo userInfo = UserConvertor.INSTANCE.mapToVo(user);
+        StpUtil.getSession().set(userInfo.getUserId().toString(), userInfo);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.nickNameBloomFilter = redissonClient.getBloomFilter("nickName");
+        this.nickNameBloomFilter = redissonClient.getBloomFilter("userName");
         if (nickNameBloomFilter != null && !nickNameBloomFilter.isExists()) {
             this.nickNameBloomFilter.tryInit(100000L, 0.01);
         }

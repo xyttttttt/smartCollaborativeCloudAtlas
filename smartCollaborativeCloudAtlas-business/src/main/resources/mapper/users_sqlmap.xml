@@ -3,46 +3,48 @@
 
 <mapper namespace="com.xyt.cloudAtlas.business.infrastructure.mapper.UserMapper">
     <resultMap id="BaseResultMap" type="com.xyt.cloudAtlas.business.domain.entity.user.User">
-        <result property="id" column="ID"/>
-        <result property="gmtCreate" column="GMT_CREATE"/>
-        <result property="gmtModified" column="GMT_MODIFIED"/>
-        <result property="nickName" column="NICK_NAME"/>
-        <result property="passwordHash" column="PASSWORD_HASH"/>
-        <result property="state" column="STATE"/>
-        <result property="inviteCode" column="INVITE_CODE"/>
-        <result property="telephone" column="TELEPHONE"/>
-        <result property="inviterId" column="INVITER_ID"/>
-        <result property="lastLoginTime" column="LAST_LOGIN_TIME"/>
-        <result property="profilePhotoUrl" column="PROFILE_PHOTO_URL"/>
-        <result property="blockChainUrl" column="BLOCK_CHAIN_URL"/>
-        <result property="blockChainPlatform" column="BLOCK_CHAIN_PLATFORM"/>
-        <result property="certification" column="CERTIFICATION"/>
-        <result property="realName" column="REAL_NAME" typeHandler="com.xyt.cloudAtlas.business.infrastructure.handler.AesEncryptTypeHandler"/>
-        <result property="idCardNo" column="ID_CARD_NO" typeHandler="com.xyt.cloudAtlas.business.infrastructure.handler.AesEncryptTypeHandler"/>
-        <result property="userRole" column="USER_ROLE"/>
-        <result property="deleted" column="DELETED"/>
-        <result property="lockVersion" column="LOCK_VERSION"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="userAccount" column="user_account" jdbcType="VARCHAR"/>
+        <result property="passwordHash" column="password_hash" jdbcType="VARCHAR"/>
+        <result property="userName" column="user_name" jdbcType="VARCHAR"/>
+        <result property="avatar" column="avatar" jdbcType="VARCHAR"/>
+        <result property="inviteCode" column="invite_code" jdbcType="VARCHAR"/>
+        <result property="inviteFrom" column="invite_from" jdbcType="VARCHAR"/>
+        <result property="status" column="status" jdbcType="SMALLINT"/>
+        <result property="profile" column="profile" jdbcType="VARCHAR"/>
+        <result property="userRole" column="user_role" jdbcType="VARCHAR"/>
+        <result property="editTime" column="edit_time" jdbcType="TIMESTAMP"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="lastLoginTime" column="last_login_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="is_delete" jdbcType="TINYINT"/>
+        <result property="version" column="version" jdbcType="INTEGER"/>
     </resultMap>
 
 
-    <select id="findById" resultMap="BaseResultMap">select * from users where deleted=0
+    <select id="findById" resultMap="BaseResultMap">select * from user where is_delete=0
         <if test="id!=null">AND id = #{id}</if>
     </select>
 
-    <select id="findByNickname" resultMap="BaseResultMap">select * from users where deleted=0
-        <if test="nickName!=null">AND nick_name = #{nickName}</if>
+    <select id="findByNickname" resultMap="BaseResultMap">select * from user where is_delete=0
+        <if test="nickName!=null">AND user_name = #{nickName}</if>
     </select>
 
-    <select id="findByInviteCode" resultMap="BaseResultMap">select * from users where deleted=0
+    <select id="findByInviteCode" resultMap="BaseResultMap">select * from user where is_delete=0
         <if test="inviteCode!=null">AND invite_code = #{inviteCode}</if>
     </select>
 
-    <select id="findByTelephone" resultMap="BaseResultMap">select * from users where deleted=0
-        <if test="telephone!=null">AND telephone = #{telephone}</if>
+    <select id="findByAccount" resultMap="BaseResultMap">select * from user where is_delete=0
+        <if test="account!=null">AND user_account = #{account}</if>
     </select>
 
-    <select id="findByTelephoneAndPass" resultMap="BaseResultMap">select * from users where deleted=0
-        <if test="telephone!=null">AND telephone = #{telephone}</if>
+    <select id="findByAccountAndPass" resultMap="BaseResultMap">
+        select * from user where is_delete=0
+        <if test="userAccount!=null">AND user_account = #{userAccount}</if>
         <if test="passwordHash!=null">AND password_hash = #{passwordHash}</if>
+    </select>
+    <select id="findByUserName" resultType="com.xyt.cloudAtlas.business.domain.entity.user.User">
+        select * from user where is_delete=0
+        <if test="userName!=null">AND user_name like '%'#{userName}'%'</if>
     </select>
 </mapper>

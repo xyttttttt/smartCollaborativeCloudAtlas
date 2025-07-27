@@ -19,83 +19,39 @@ public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+
     /**
      * 主键
      */
     @TableId(type = IdType.AUTO)
     private Long id;
-    /**
-     * 是否删除
-     */
-    @TableLogic
-    @TableField(fill = FieldFill.INSERT)
-    private Integer deleted;
-
-    /**
-     * 乐观锁版本号
-     */
-    @Version
-    @TableField(fill = FieldFill.INSERT)
-    private Integer lockVersion;
 
     /**
      * 创建时间
      */
-    @TableField(fill = FieldFill.INSERT)
-    private Date gmtCreate;
+    @TableField(value = "create_time",fill = FieldFill.INSERT)
+    private Date createTime;
+
 
     /**
-     * 修改时间
+     * 更新时间
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Date gmtModified;
+    @TableField(value = "update_time",fill = FieldFill.INSERT_UPDATE)
+    private Date updateTime;
 
-    public Long getId() {
-        return id;
-    }
+    /**
+     * 是否删除
+     */
+    @TableLogic
+    @TableField(value = "is_delete",fill = FieldFill.INSERT)
+    private Integer isDelete;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    /**
+     * 版本号
+     */
+    @Version
+    @TableField(value = "version",fill = FieldFill.INSERT)
+    private Integer version;
 
-    public Integer getDeleted() {
-        return deleted;
-    }
 
-    public void setDeleted(Integer deleted) {
-        this.deleted = deleted;
-    }
-
-    public Integer getLockVersion() {
-        return lockVersion;
-    }
-
-    public void setLockVersion(Integer lockVersion) {
-        this.lockVersion = lockVersion;
-    }
-
-    public Date getGmtCreate() {
-        return gmtCreate;
-    }
-
-    public void setGmtCreate(Date gmtCreate) {
-        this.gmtCreate = gmtCreate;
-    }
-
-    public Date getGmtModified() {
-        return gmtModified;
-    }
-
-    public void setGmtModified(Date gmtModified) {
-        this.gmtModified = gmtModified;
-    }
-
-    @Override
-    public String toString() {
-        return new StringJoiner(", ", BaseEntity.class.getSimpleName() + "[", "]")
-                .add("id=" + id)
-                .add("deleted=" + deleted)
-                .add("lockVersion=" + lockVersion)
-                .toString();
-    }
 }

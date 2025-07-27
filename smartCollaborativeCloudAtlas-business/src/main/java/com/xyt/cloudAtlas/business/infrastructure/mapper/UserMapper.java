@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xyt.cloudAtlas.business.domain.entity.user.User;
 import jakarta.validation.constraints.NotNull;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * user mapper
@@ -39,17 +40,19 @@ public interface UserMapper extends BaseMapper<User> {
     /**
      * 根据手机号查询用户
      *
-     * @param telephone
+     * @param account
      * @return
      */
-    User findByTelephone(@NotNull String telephone);
+    User findByAccount(@NotNull String account);
 
     /**
      * 根据昵称和密码查询用户
      *
-     * @param telephone
+     * @param userAccount
      * @param passwordHash
      * @return
      */
-    User findByTelephoneAndPass(String telephone, String passwordHash);
+    User findByAccountAndPass(@Param("userAccount") String userAccount, @Param("passwordHash") String passwordHash);
+
+    User findByUserName(@Param("userName") String userName);
 }
