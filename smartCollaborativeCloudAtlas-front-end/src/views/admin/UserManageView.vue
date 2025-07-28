@@ -114,7 +114,7 @@ const doFreeze = async (id: string) => {
     return
   }
   const res = await freeze({ id })
-  if (res.data.code === 0) {
+  if (res.data.code === 'SUCCESS') {
     message.success('删除成功')
     // 刷新数据
     fetchData()
@@ -129,7 +129,7 @@ const doUnfreeze = async (id: string) => {
     return
   }
   const res = await unfreeze({ id })
-  if (res.data.code === 0) {
+  if (res.data.code === 'SUCCESS') {
     message.success('删除成功')
     // 刷新数据
     fetchData()
